@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Kasboek favicon">
+  <defs>
+    <filter id="wob" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <style>
+      .d{fill:none;stroke:#24211D;stroke-width:15;stroke-linecap:round;stroke-linejoin:round}
+      .fc{fill:#FCFAF4;stroke:none}
+      .e{stroke:#B98A3D;stroke-width:18}
+    </style>
+  </defs>
+  <g class="d" filter="url(#wob)" transform="rotate(-2.4 256 256)">
+    <path class="fc" d="M150 128 Q146 256 152 392 Q256 402 360 392 Q366 256 360 126 Q256 116 150 128 Z"/>
+    <!-- cover edges -->
+    <path d="M150 104 Q142 256 154 408"/>
+    <path d="M136 122 Q256 108 372 124"/>
+    <path d="M362 106 Q374 256 360 410"/>
+    <path d="M138 396 Q256 412 374 394"/>
+    <!-- spine -->
+    <path d="M192 122 Q186 256 196 396"/>
+    <!-- euro -->
+    <path class="e" d="M328 196 Q252 172 216 214 Q188 252 216 296 Q252 336 328 314"/>
+    <path class="e" d="M204 232 Q248 226 292 230"/>
+    <path class="e" d="M198 262 Q242 257 282 261"/>
+  </g>
+</svg>

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Kasboek logo — een handgetekend grootboek met euroteken">
+  <defs>
+    <filter id="wob" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.013" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <style>
+      .draw{fill:none;stroke:#24211D;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+      .hb{opacity:.55;stroke-width:3.4}
+      .fillcover{fill:#FCFAF4;stroke:none}
+      .eu{stroke:#B98A3D;stroke-width:7}
+      .eu-b{stroke:#B98A3D;opacity:.5;stroke-width:5}
+      .blue{stroke:#3D5A80;stroke-width:3.2;opacity:.85}
+      .coin{stroke:#B98A3D;stroke-width:4.6}
+      .coin-b{stroke:#B98A3D;opacity:.5;stroke-width:3.6}
+      .page{stroke:#24211D;stroke-width:3.2;opacity:.5}
+    </style>
+  </defs>
+
+  <g class="draw" filter="url(#wob)" transform="rotate(-2.4 256 256)">
+    <!-- coin behind, lower right -->
+    <path class="coin"   d="M404 350 Q420 380 396 404 Q368 424 340 406 Q320 384 336 356 Q360 336 388 348 Q402 356 406 372"/>
+    <path class="coin-b" d="M398 356 Q412 380 392 400 Q368 416 344 402 Q328 384 340 361 Q360 346 384 356"/>
+
+    <!-- cover plane (subtle warm fill) -->
+    <path class="fillcover" d="M164 128 Q160 250 166 394 Q250 402 336 394 Q342 250 336 126 Q250 118 164 128 Z"/>
+
+    <!-- page-stack hint on the right -->
+    <path class="page" d="M344 150 Q349 250 345 382"/>
+    <path class="page" d="M351 160 Q356 250 352 372"/>
+
+    <!-- cover edges, each drawn twice -->
+    <path d="M162 110 Q155 250 164 404"/>
+    <path class="hb" d="M167 120 Q160 250 168 396"/>
+    <path d="M150 124 Q250 112 348 126"/>
+    <path class="hb" d="M156 130 Q250 120 342 131"/>
+    <path d="M338 112 Q347 250 336 406"/>
+    <path class="hb" d="M333 122 Q341 250 331 398"/>
+    <path d="M150 396 Q250 410 350 394"/>
+    <path class="hb" d="M156 390 Q250 402 343 389"/>
+
+    <!-- spine + binding ticks -->
+    <path d="M198 126 Q193 250 200 396"/>
+    <path class="hb" d="M203 134 Q198 250 205 389"/>
+    <path d="M164 176 Q182 172 198 178"/>
+    <path d="M164 250 Q182 246 199 252"/>
+    <path d="M165 330 Q183 326 200 332"/>
+
+    <!-- euro emblem (gold), doubled -->
+    <path class="eu"   d="M312 198 Q252 180 224 214 Q203 244 224 276 Q252 308 312 292"/>
+    <path class="eu-b" d="M309 206 Q255 189 231 217 Q212 245 231 271 Q255 300 309 285"/>
+    <path class="eu"   d="M214 228 Q250 223 286 227"/>
+    <path class="eu"   d="M210 250 Q246 246 278 250"/>
+
+    <!-- ledger lines (blue) -->
+    <path class="blue" d="M206 328 Q262 323 320 329"/>
+    <path class="blue" d="M206 346 Q262 341 318 347"/>
+    <path class="blue" d="M206 364 Q262 359 316 365"/>
+  </g>
+</svg>
