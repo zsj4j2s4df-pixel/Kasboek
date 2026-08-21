@@ -5,8 +5,8 @@
       <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
     <style>
-      .d{fill:none;stroke:#24211D;stroke-width:15;stroke-linecap:round;stroke-linejoin:round}
-      .fc{fill:#FCFAF4;stroke:none}
+      .d{fill:none;stroke:#3A302A;stroke-width:15;stroke-linecap:round;stroke-linejoin:round}
+      .fc{fill:#F7F1E6;stroke:none}
       .e{stroke:#B98A3D;stroke-width:18}
     </style>
   </defs>

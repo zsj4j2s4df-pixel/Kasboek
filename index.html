@@ -5,28 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#F6F2E9">
+<meta name="theme-color" content="#EDE5D6">
 <meta name="apple-mobile-web-app-title" content="Kasboek">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
 <title>Kasboek</title>
 <style>
 :root{
-  --papier:#F6F2E9; --kaart:#FFFFFF; --rand:#E4DFD3; --lijn:#F0ECE1;
-  --inkt:#24211D; --grijs:#6B6558; --licht:#8C8477; --zeer-licht:#B7AF9E;
-  --groen:#3F6B4B; --oranje:#C97F1E; --rood:#A8462E;
-  --rekening:#3D5A80; --contant:#8C6D3F; --paars:#8C5A7A; --blauwgrijs:#5B6B7A; --goud:#B98A3D;
+  --papier:#EDE5D6; --kaart:#F7F1E6; --rand:#CBB99B; --lijn:#E3D8C4;
+  --inkt:#3A302A; --grijs:#7A6C5E; --licht:#9C8D79; --zeer-licht:#BEB29C;
+  --groen:#4A6B4E; --oranje:#B9772E; --rood:#A8462E;
+  --rekening:#5A4433; --contant:#8A6A45; --paars:#7A5A50; --blauwgrijs:#6E5A46; --goud:#B98A3D;
+  --schets:#6B5844;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--papier);color:var(--inkt);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-family:'Patrick Hand',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+h1,h2,#maandLabel,.splash-titel{font-family:'Caveat',cursive}
 .wrap{max-width:720px;margin:0 auto;padding:24px 14px 90px}
 .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-h1{font-size:26px;margin:0;font-weight:700;letter-spacing:-0.4px}
-h2{font-size:17px;margin:0;font-weight:600;display:flex;align-items:center;gap:8px}
+h1{font-size:34px;margin:0;font-weight:700;letter-spacing:0;line-height:.95}
+h2{font-size:23px;margin:0;font-weight:700;display:flex;align-items:center;gap:8px;line-height:1}
 .sub{font-size:13px;color:var(--grijs);margin:2px 0 18px}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 input{background:transparent;border:none;border-bottom:1px solid transparent;outline:none;
@@ -36,18 +41,21 @@ input::placeholder{color:var(--zeer-licht)}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 button{font-family:inherit;cursor:pointer}
-.kaart{background:var(--kaart);border:1px solid var(--rand);border-radius:6px;overflow:hidden}
+.kaart{position:relative;background:var(--kaart);border:1px solid transparent;border-radius:8px;overflow:hidden}
+.kaart::after,.pot::after{content:"";position:absolute;inset:2px;border-radius:6px;
+  border:1.8px solid var(--schets);filter:url(#wobble);pointer-events:none;z-index:3}
+.pot::after{border-color:rgba(242,234,217,.5)}
 .maandbalk{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:18px}
 .maandbalk button{background:none;border:none;color:var(--grijs);font-size:22px;padding:4px 10px;line-height:1}
-#maandLabel{font-size:16px;font-weight:600;min-width:170px;text-align:center;text-transform:capitalize}
+#maandLabel{font-size:22px;font-weight:700;min-width:170px;text-align:center;text-transform:capitalize}
 .potten{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
-.pot{border-radius:6px;padding:13px 15px;color:#F2EEE6}
-.pot.rek{background:#2C3E50} .pot.con{background:#463726}
-.pot .naam{font-size:12px;font-weight:600;opacity:.85;margin-bottom:6px}
-.pot .groot{font-size:21px;font-weight:600}
-.pot .klein{font-size:10.5px;opacity:.55;margin-bottom:8px}
-.pot .spaarrij{border-top:1px solid rgba(255,255,255,.14);padding-top:7px;display:flex;
-  align-items:center;justify-content:space-between;gap:6px;font-size:10.5px;opacity:.85}
+.pot{position:relative;border-radius:6px;padding:13px 15px;color:#F2EAD9}
+.pot.rek{background:#3B2E25} .pot.con{background:#6A4E34}
+.pot .naam{font-size:14px;font-weight:600;opacity:.9;margin-bottom:5px}
+.pot .groot{font-size:22px;font-weight:600}
+.pot .klein{font-size:11px;opacity:.55;margin-bottom:8px}
+.pot .spaarrij{border-top:1px solid rgba(255,255,255,.16);padding-top:7px;display:flex;
+  align-items:center;justify-content:space-between;gap:6px;font-size:12px;opacity:.9}
 .pot input{color:#F2EEE6;text-align:right;font-size:14px}
 .pot .veld{display:flex;align-items:center;gap:3px;width:100px}
 .hint{text-align:center;font-size:11px;color:var(--licht);margin-bottom:18px}
@@ -113,12 +121,70 @@ button{font-family:inherit;cursor:pointer}
 .voet{margin-top:26px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .voet .knop{font-size:11.5px}
 .dim{opacity:.45}
+/* header logo */
+.merk{display:flex;align-items:center;gap:11px}
+.merk svg{width:38px;height:38px;flex-shrink:0;filter:url(#wobble-rough)}
+/* splash */
+#splash{position:fixed;inset:0;z-index:60;background:var(--papier);
+  display:flex;align-items:center;justify-content:center;transition:opacity .55s ease}
+#splash.weg{opacity:0;pointer-events:none}
+.splash-in{display:flex;flex-direction:column;align-items:center;gap:16px;
+  animation:splashpop .65s cubic-bezier(.2,.8,.3,1) both}
+.splash-in svg{width:120px;height:120px;filter:url(#wobble-rough)}
+.splash-titel{font-size:52px;font-weight:700;color:var(--inkt);line-height:1}
+.splash-sub{font-size:16px;color:var(--grijs);margin-top:-6px}
+@keyframes splashpop{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="wobble" x="-6%" y="-6%" width="112%" height="112%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="5" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="wobble-rough" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</defs></svg>
+
+<div id="splash"><div class="splash-in">
+  <svg viewBox="0 0 512 512" aria-label="Kasboek logo">
+    <g fill="none" stroke="#3A302A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-2.4 256 256)">
+      <path fill="#F7F1E6" stroke="none" d="M164 128 Q160 250 166 394 Q250 402 336 394 Q342 250 336 126 Q250 118 164 128 Z"/>
+      <path d="M162 110 Q155 250 164 404"/><path d="M150 124 Q250 112 348 126"/>
+      <path d="M338 112 Q347 250 336 406"/><path d="M150 396 Q250 410 350 394"/>
+      <path d="M198 126 Q193 250 200 396"/>
+      <path stroke="#B98A3D" stroke-width="17" d="M312 198 Q252 180 224 214 Q203 244 224 276 Q252 308 312 292"/>
+      <path stroke="#B98A3D" stroke-width="17" d="M214 228 Q250 223 286 227"/>
+      <path stroke="#B98A3D" stroke-width="17" d="M210 250 Q246 246 278 250"/>
+      <path stroke="#8A6A45" stroke-width="9" d="M206 330 Q262 325 318 331"/>
+      <path stroke="#8A6A45" stroke-width="9" d="M206 350 Q262 345 316 351"/>
+    </g>
+  </svg>
+  <div class="splash-titel">Kasboek</div>
+  <div class="splash-sub">rekening &amp; contant, overzichtelijk</div>
+</div></div>
+
 <div class="wrap">
-  <div style="display:flex;align-items:baseline;justify-content:space-between">
-    <h1>Kasboek</h1><span id="opslagStatus" class="mono" style="font-size:11px;color:#8C9A8E">opgeslagen</span>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div class="merk">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <g fill="none" stroke="#3A302A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-2.4 256 256)">
+          <path fill="#F7F1E6" stroke="none" d="M164 128 Q160 250 166 394 Q250 402 336 394 Q342 250 336 126 Q250 118 164 128 Z"/>
+          <path d="M162 110 Q155 250 164 404"/><path d="M150 124 Q250 112 348 126"/>
+          <path d="M338 112 Q347 250 336 406"/><path d="M150 396 Q250 410 350 394"/>
+          <path d="M198 126 Q193 250 200 396"/>
+          <path stroke="#B98A3D" stroke-width="17" d="M312 198 Q252 180 224 214 Q203 244 224 276 Q252 308 312 292"/>
+          <path stroke="#B98A3D" stroke-width="17" d="M214 228 Q250 223 286 227"/>
+          <path stroke="#B98A3D" stroke-width="17" d="M210 250 Q246 246 278 250"/>
+          <path stroke="#8A6A45" stroke-width="9" d="M206 330 Q262 325 318 331"/>
+          <path stroke="#8A6A45" stroke-width="9" d="M206 350 Q262 345 316 351"/>
+        </g>
+      </svg>
+      <h1>Kasboek</h1>
+    </div>
+    <span id="opslagStatus" class="mono" style="font-size:11px;color:#8C9A8E">opgeslagen</span>
   </div>
   <p class="sub">Rekening en contant apart — vaste lasten, opnames, spaarpotten en kascontrole</p>
 
@@ -561,6 +627,14 @@ function start(){
   laadMaand();
 }
 start();
+
+// splashscreen wegfaden zodra de app geladen is
+(function(){
+  const s=$("splash"); if(!s)return;
+  const weg=()=>{s.classList.add("weg");setTimeout(()=>s.remove(),650);};
+  const t=setTimeout(weg,1100);
+  window.addEventListener("load",()=>{clearTimeout(t);setTimeout(weg,700);});
+})();
 </script>
 </body>
 </html>
