@@ -603,7 +603,7 @@ document.querySelectorAll("[data-add]").forEach(b=>{
   if(soort==="income"){globaleInkomsten.push(basis);bewaarGlobaleInkomsten();}
   else if(soort==="wishlist"){globaleWensenlijst.push(basis);bewaarGlobaleWensen();}
     
-    laadMaand();
+    tekenAlles();
   };
 });
 $("vorige").onclick=()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()-1,1);laadMaand();};
