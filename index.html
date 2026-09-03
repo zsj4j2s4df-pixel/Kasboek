@@ -339,8 +339,8 @@ function laadMaand(){
   data.telling=data.telling||{rekening:"",contant:""};
   data.correctie=data.correctie||{rekening:0,contant:0};
   
-  data.income=[...globaleInkomsten].map(r=>Object.assign({bron:"rekening"},r));
-  data.wishlist=[...globaleWensenlijst].map(r=>Object.assign({bron:"rekening"},r));
+  data.income=[...globaleInkomsten,...(data.income||[])].map(r=>Object.assign({bron:"rekening"},r));
+  data.wishlist=[...globaleWensenlijst,...(data.wishlist||[])].map(r=>Object.assign({bron:"rekening"},r));
   data.opnames=(data.opnames||[]).map(r=>Object.assign({bron:"rekening"},r));
   data.expenses=(data.expenses||[]).map(r=>Object.assign({bron:"rekening"},r));
   
