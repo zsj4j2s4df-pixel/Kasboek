@@ -312,7 +312,7 @@ const prioVan=x=>(x.prioriteit===""||x.prioriteit==null)?9999:num(x.prioriteit);
 let cursor=new Date(); cursor.setDate(1);
 let data=leegMaand(), spaar={rekening:0,contant:0}, vaste=[], globaleInkomsten=[], globaleWensenlijst=[];
 
-function leegMaand(){return{income:[],opnames:[],expenses:[],wishlist:[],
+function leegMaand(){return{opnames:[],expenses:[],
   afgesloten:false,overgemaakt:{rekening:0,contant:0},
   telling:{rekening:"",contant:""},correctie:{rekening:0,contant:0}};}
 function mk(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -339,8 +339,8 @@ function laadMaand(){
   data.telling=data.telling||{rekening:"",contant:""};
   data.correctie=data.correctie||{rekening:0,contant:0};
   
-  data.income=[...globaleInkomsten,...(data.income||[])].map(r=>Object.assign({bron:"rekening"},r));
-  data.wishlist=[...globaleWensenlijst,...(data.wishlist||[])].map(r=>Object.assign({bron:"rekening"},r));
+  data.income=globaleInkomsten.map(r=>Object.assign({bron:"rekening"},r));
+  data.wishlist=globaleWensenlijst.map(r=>Object.assign({bron:"rekening"},r));
   data.opnames=(data.opnames||[]).map(r=>Object.assign({bron:"rekening"},r));
   data.expenses=(data.expenses||[]).map(r=>Object.assign({bron:"rekening"},r));
   
@@ -603,7 +603,7 @@ document.querySelectorAll("[data-add]").forEach(b=>{
   if(soort==="income"){globaleInkomsten.push(basis);bewaarGlobaleInkomsten();}
   else if(soort==="wishlist"){globaleWensenlijst.push(basis);bewaarGlobaleWensen();}
     
-    data[soort].push(basis); bewaarMaand(); tekenAlles();
+    laadMaand();
   };
 });
 $("vorige").onclick=()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()-1,1);laadMaand();};
