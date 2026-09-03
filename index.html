@@ -300,7 +300,7 @@ html.fonts-klaar .splash-titel,html.fonts-klaar .splash-sub{opacity:1}
 <script>
 "use strict";
 const MAANDEN=["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
-const SPAAR_KEY="kasboek:spaarpot", VAST_KEY="kasboek:vastelasten";
+const SPAAR_KEY="kasboek:spaarpot", VAST_KEY="kasboek:vastelasten", INK_KEY="kasboek:inkomsten", WENS_KEY="kasboek:wensenlijst";
 const $=id=>document.getElementById(id);
 const num=v=>{const n=parseFloat(String(v).replace(",","."));return isNaN(n)?0:n;};
 const euro=n=>(num(n)).toLocaleString("nl-NL",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -310,7 +310,7 @@ const somBron=(r,b)=>r.filter(x=>x.bron===b).reduce((a,x)=>a+num(x.bedrag),0);
 const prioVan=x=>(x.prioriteit===""||x.prioriteit==null)?9999:num(x.prioriteit);
 
 let cursor=new Date(); cursor.setDate(1);
-let data=leegMaand(), spaar={rekening:0,contant:0}, vaste=[];
+let data=leegMaand(), spaar={rekening:0,contant:0}, vaste=[], globaleInkomsten=[], globaleWensenlijst=[];
 
 function leegMaand(){return{income:[],opnames:[],expenses:[],wishlist:[],
   afgesloten:false,overgemaakt:{rekening:0,contant:0},
@@ -330,14 +330,20 @@ function schrijf(key,waarde){
 const bewaarMaand=()=>schrijf(maandKey(),data);
 const bewaarSpaar=()=>schrijf(SPAAR_KEY,spaar);
 const bewaarVaste=()=>schrijf(VAST_KEY,vaste);
+const bewaarGlobaleInkomsten=()=>schrijf(INK_KEY,globaleInkomsten);
+const bewaarGlobaleWensen=()=>schrijf(WENS_KEY,globaleWensenlijst);
 
 function laadMaand(){
   const g=lees(maandKey(),null);
   data=g?Object.assign(leegMaand(),g):leegMaand();
   data.telling=data.telling||{rekening:"",contant:""};
   data.correctie=data.correctie||{rekening:0,contant:0};
-  ["income","opnames","expenses","wishlist"].forEach(k=>{
-    data[k]=(data[k]||[]).map(r=>Object.assign({bron:"rekening"},r));});
+  
+  data.income=[...globaleInkomsten].map(r=>Object.assign({bron:"rekening"},r));
+  data.wishlist=[...globaleWensenlijst].map(r=>Object.assign({bron:"rekening"},r));
+  data.opnames=(data.opnames||[]).map(r=>Object.assign({bron:"rekening"},r));
+  data.expenses=(data.expenses||[]).map(r=>Object.assign({bron:"rekening"},r));
+  
   $("telRek").value=data.telling.rekening; $("telCon").value=data.telling.contant;
   $("maandLabel").textContent=MAANDEN[cursor.getMonth()]+" "+cursor.getFullYear();
   tekenAlles();
@@ -552,7 +558,7 @@ function tekenWensen(){
     boven.appendChild(inputEl("omschrijving","text","wat wil je?",w.omschrijving,v=>{w.omschrijving=v;bewaarMaand();}));
     boven.appendChild(bronEl(w.bron,v=>{w.bron=v;bewaarMaand();}));
     boven.appendChild(bedragEl(w.bedrag,v=>{w.bedrag=v;bewaarMaand();ververs();}));
-    boven.appendChild(wisEl(()=>{data.wishlist=data.wishlist.filter(x=>x.id!==w.id);bewaarMaand();tekenWensen();ververs();}));
+    boven.appendChild(wisEl(()=>{data.wishlist=data.wishlist.filter(x=>x.id!==w.id);globaleWensenlijst=globaleWensenlijst.filter(x=>x.id!==w.id);bewaarMaand();bewaarGlobaleWensen();tekenWensen();ververs();}));
     el.appendChild(boven);
 
     const lk=document.createElement("div"); lk.className="link";
@@ -572,7 +578,7 @@ function tekenWensen(){
 
 function tekenAlles(){
   tekenLijst("lijstInkomsten",data.income,{bron:true,bewaar:bewaarMaand,
-    verwijder:id=>{data.income=data.income.filter(r=>r.id!==id);bewaarMaand();tekenAlles();ververs();}});
+    verwijder:id=>{data.income=data.income.filter(r=>r.id!==id);globaleInkomsten=globaleInkomsten.filter(r=>r.id!==id);bewaarMaand();bewaarGlobaleInkomsten();tekenAlles();ververs();}});
   tekenVaste();
   tekenLijst("lijstOpnames",data.opnames,{ph:"bijv. pinnen zaterdag",leegTekst:"Nog niets opgenomen.",bewaar:bewaarMaand,
     verwijder:id=>{data.opnames=data.opnames.filter(r=>r.id!==id);bewaarMaand();tekenAlles();ververs();}});
@@ -593,6 +599,10 @@ document.querySelectorAll("[data-add]").forEach(b=>{
     const basis={id:uid(),omschrijving:"",bedrag:"",bron:"rekening"};
     if(soort==="expenses"||soort==="wishlist")basis.prioriteit=String(data[soort].length+1);
     if(soort==="wishlist"){basis.link="";basis.gekocht=false;}
+  
+  if(soort==="income"){globaleInkomsten.push(basis);bewaarGlobaleInkomsten();}
+  else if(soort==="wishlist"){globaleWensenlijst.push(basis);bewaarGlobaleWensen();}
+    
     data[soort].push(basis); bewaarMaand(); tekenAlles();
   };
 });
@@ -628,6 +638,8 @@ function start(){
   spaar={rekening:num(s.rekening),contant:num(s.contant)};
   $("spaarRek").value=spaar.rekening; $("spaarCon").value=spaar.contant;
   vaste=lees(VAST_KEY,[]); if(!Array.isArray(vaste))vaste=[];
+  globaleInkomsten=lees(INK_KEY,[]); if(!Array.isArray(globaleInkomsten))globaleInkomsten=[];
+  globaleWensenlijst=lees(WENS_KEY,[]); if(!Array.isArray(globaleWensenlijst))globaleWensenlijst=[];
   laadMaand();
 }
 start();
