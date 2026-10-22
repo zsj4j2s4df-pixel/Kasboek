@@ -1,0 +1,10 @@
+{
+  "name": "kasboek",
+  "main": "dist/worker-bundle.mjs",
+  "compatibility_date": "2026-10-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {"enabled": true, "head_sampling_rate": 0.1, "redact_query_string": true},
+  "build": {"command": "node scripts/build.mjs"}
+}
