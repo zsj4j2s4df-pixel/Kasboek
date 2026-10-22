@@ -2,6 +2,8 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -139,8 +141,23 @@ button{font-family:inherit;cursor:pointer}
 html.fonts-klaar .splash-titel,html.fonts-klaar .splash-sub{opacity:1}
 @keyframes splashpop{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:none}}
 </style>
-</head>
+<style>
+dialog{border:1px solid #D6C9B5;border-radius:16px;max-width:430px;width:calc(100% - 44px);padding:24px;color:#332D28;background:#F6F2E9;font-family:system-ui,sans-serif}
+dialog::backdrop{background:rgba(30,26,21,.88)}
+dialog h2{font:600 23px system-ui,sans-serif;margin:0 0 12px}dialog p{font:14px/1.5 system-ui,sans-serif}
+dialog input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #B7AF9E;border-radius:8px;margin:6px 0 14px;font:16px system-ui,sans-serif;background:white}
+dialog button{padding:10px 16px;margin:6px 6px 0 0;border:1px solid #B7AF9E;border-radius:8px;cursor:pointer;background:#E8E0D0;font:14px system-ui,sans-serif}
+#wachtwoordFout{color:#A8462E;min-height:20px}#migratieBericht{margin:12px 0;padding:16px;background:#EFE4CD;border-radius:12px;font:14px/1.5 system-ui,sans-serif}
+</style></head>
 <body>
+<dialog id="wachtwoordDialoog" aria-labelledby="wachtwoordTitel">
+<form id="wachtwoordFormulier">
+<h2 id="wachtwoordTitel">Kasboek ontgrendelen</h2><p id="wachtwoordUitleg"></p>
+<label for="wachtwoord">Wachtwoord</label><input id="wachtwoord" type="password" autocomplete="current-password" required maxlength="256">
+<div id="wachtwoordHerhaalBlok" hidden><label for="wachtwoordHerhaal">Herhaal wachtwoord</label><input id="wachtwoordHerhaal" type="password" autocomplete="new-password" maxlength="256"></div>
+<p id="wachtwoordFout" role="alert"></p>
+<button id="wachtwoordDoorgaan" type="submit">Ontgrendelen</button><button id="wachtwoordAnnuleren" type="button" hidden>Annuleren</button>
+</form></dialog>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <filter id="wobble" x="-6%" y="-6%" width="112%" height="112%">
     <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="5" result="n"/>
@@ -192,6 +209,7 @@ html.fonts-klaar .splash-titel,html.fonts-klaar .splash-sub{opacity:1}
   </div>
   <p class="sub">Rekening en contant apart — vaste lasten, opnames, spaarpotten en kascontrole</p>
 
+  <div id="migratieBericht" hidden></div>
   <div class="maandbalk">
     <button id="vorige" aria-label="Vorige maand">‹</button>
     <span id="maandLabel"></span>
@@ -291,379 +309,14 @@ html.fonts-klaar .splash-titel,html.fonts-klaar .splash-sub{opacity:1}
   </div>
 
   <div class="voet">
-    <button class="knop" id="exporteren">Back-up opslaan</button>
+    <button class="knop" id="exporteren">Versleutelde back-up opslaan</button>
     <button class="knop" id="importeren">Back-up terugzetten</button>
+    <button class="knop" id="vergrendelen">Vergrendelen</button>
     <input type="file" id="bestand" accept="application/json" style="display:none">
   </div>
 </div>
 
-<script>
-"use strict";
-const MAANDEN=["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
-const SPAAR_KEY="kasboek:spaarpot", VAST_KEY="kasboek:vastelasten", INK_KEY="kasboek:inkomsten", WENS_KEY="kasboek:wensenlijst";
-const $=id=>document.getElementById(id);
-const num=v=>{const n=parseFloat(String(v).replace(",","."));return isNaN(n)?0:n;};
-const euro=n=>(num(n)).toLocaleString("nl-NL",{minimumFractionDigits:2,maximumFractionDigits:2});
-const uid=()=>Math.random().toString(36).slice(2,10);
-const som=r=>r.reduce((a,x)=>a+num(x.bedrag),0);
-const somBron=(r,b)=>r.filter(x=>x.bron===b).reduce((a,x)=>a+num(x.bedrag),0);
-const prioVan=x=>(x.prioriteit===""||x.prioriteit==null)?9999:num(x.prioriteit);
-
-let cursor=new Date(); cursor.setDate(1);
-let data=leegMaand(), spaar={rekening:0,contant:0}, vaste=[], globaleInkomsten=[], globaleWensenlijst=[];
-
-function leegMaand(){return{opnames:[],expenses:[],
-  afgesloten:false,overgemaakt:{rekening:0,contant:0},
-  telling:{rekening:"",contant:""},correctie:{rekening:0,contant:0}};}
-function mk(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
-function maandKey(){return "kasboek:"+mk(cursor);}
-
-function lees(key,fallback){try{const r=localStorage.getItem(key);return r?JSON.parse(r):fallback;}catch(e){return fallback;}}
-let statusTimer;
-function schrijf(key,waarde){
-  try{localStorage.setItem(key,JSON.stringify(waarde));
-    $("opslagStatus").textContent="opslaan…";$("opslagStatus").style.color="#B98A3D";
-    clearTimeout(statusTimer);
-    statusTimer=setTimeout(()=>{$("opslagStatus").textContent="opgeslagen";$("opslagStatus").style.color="#8C9A8E";},350);
-  }catch(e){$("opslagStatus").textContent="opslaan mislukt";$("opslagStatus").style.color="#A8462E";}
-}
-const bewaarMaand=()=>schrijf(maandKey(),data);
-const bewaarSpaar=()=>schrijf(SPAAR_KEY,spaar);
-const bewaarVaste=()=>schrijf(VAST_KEY,vaste);
-const bewaarGlobaleInkomsten=()=>schrijf(INK_KEY,globaleInkomsten);
-const bewaarGlobaleWensen=()=>schrijf(WENS_KEY,globaleWensenlijst);
-
-function laadMaand(){
-  const g=lees(maandKey(),null);
-  data=g?Object.assign(leegMaand(),g):leegMaand();
-  data.telling=data.telling||{rekening:"",contant:""};
-  data.correctie=data.correctie||{rekening:0,contant:0};
-  
-  data.income=globaleInkomsten.map(r=>Object.assign({bron:"rekening"},r));
-  data.wishlist=globaleWensenlijst.map(r=>Object.assign({bron:"rekening"},r));
-  data.opnames=(data.opnames||[]).map(r=>Object.assign({bron:"rekening"},r));
-  data.expenses=(data.expenses||[]).map(r=>Object.assign({bron:"rekening"},r));
-  
-  $("telRek").value=data.telling.rekening; $("telCon").value=data.telling.contant;
-  $("maandLabel").textContent=MAANDEN[cursor.getMonth()]+" "+cursor.getFullYear();
-  tekenAlles();
-}
-
-function actiefNu(v){const m=mk(cursor);
-  if(v.start&&v.start>m)return false; if(v.eind&&v.eind<m)return false; return true;}
-
-// ---------- rekenwerk ----------
-function bereken(){
-  const vasteNu=vaste.filter(actiefNu);
-  const opgenomen=som(data.opnames);
-  const gekocht=data.wishlist.filter(w=>w.gekocht);
-  const c=data.correctie;
-  const b={
-    rekening:spaar.rekening+somBron(data.income,"rekening")-somBron(vasteNu,"rekening")
-      -somBron(data.expenses,"rekening")-opgenomen-somBron(gekocht,"rekening")+num(c.rekening),
-    contant:spaar.contant+somBron(data.income,"contant")-somBron(vasteNu,"contant")
-      -somBron(data.expenses,"contant")+opgenomen-somBron(gekocht,"contant")+num(c.contant)
-  };
-  const pot={rekening:b.rekening,contant:b.contant};
-  const status={};
-  data.wishlist.slice().sort((x,y)=>prioVan(x)-prioVan(y)).forEach(w=>{
-    const bron=w.bron==="contant"?"contant":"rekening";
-    if(w.gekocht){status[w.id]={status:null,rest:pot[bron],bron};return;}
-    const prijs=num(w.bedrag); let s=null;
-    if(prijs>0){ if(pot[bron]<prijs)s="rood"; else if(pot[bron]<prijs*5)s="oranje"; else s="groen"; }
-    const nodig=(s==="rood"&&bron==="contant"&&pot.rekening>=(prijs-pot.contant))?prijs-pot.contant:0;
-    status[w.id]={status:s,rest:pot[bron],bron,nodig};
-    if(s==="oranje"||s==="groen")pot[bron]-=prijs;
-  });
-  return {b,status,vasteNu,opgenomen,gekocht};
-}
-
-function cel(v){const k=v<0?"min":v>0?"plus":"nul";
-  return '<span class="cel '+k+'">'+(v<0?"− ":"")+"€ "+euro(Math.abs(v))+"</span>";}
-function rij(label,a,b,dik){return '<div class="rij'+(dik?" dik":"")+'"><span>'+label+"</span><span>"+cel(a)+cel(b)+"</span></div>";}
-
-function ververs(){
-  const {b,status,vasteNu,opgenomen,gekocht}=bereken();
-  $("besRek").textContent="€ "+euro(b.rekening);
-  $("besCon").textContent="€ "+euro(b.contant);
-  $("besRek").style.color=b.rekening<0?"#E8A08D":"#F2EEE6";
-  $("besCon").style.color=b.contant<0?"#E8A08D":"#F2EEE6";
-
-  const wr=somBron(gekocht,"rekening"), wc=somBron(gekocht,"contant"), c=data.correctie;
-  let h=rij("Spaarpot",spaar.rekening,spaar.contant)
-    +rij("Inkomsten",somBron(data.income,"rekening"),somBron(data.income,"contant"))
-    +rij("Vaste lasten",-somBron(vasteNu,"rekening"),-somBron(vasteNu,"contant"))
-    +rij("Opnames",-opgenomen,opgenomen)
-    +rij("Losse uitgaven",-somBron(data.expenses,"rekening"),-somBron(data.expenses,"contant"));
-  if(wr+wc>0)h+=rij("Gekochte wensen",-wr,-wc);
-  if(num(c.rekening)||num(c.contant))h+=rij("Kascorrectie",num(c.rekening),num(c.contant));
-  h+='<div class="streep"></div>'+rij("Beschikbaar",b.rekening,b.contant,true);
-  $("overzichtRijen").innerHTML=h;
-
-  $("totInk").textContent="€ "+euro(som(data.income));
-  $("totVast").textContent="€ "+euro(som(vasteNu))+" deze maand";
-  $("totOpn").textContent="€ "+euro(opgenomen);
-  $("totUit").textContent="€ "+euro(som(data.expenses));
-  $("totWens").textContent="€ "+euro(som(data.wishlist.filter(w=>!w.gekocht)))+" openstaand";
-
-  // kascontrole
-  ["rekening","contant"].forEach(k=>{
-    const el=$(k==="rekening"?"diffRek":"diffCon"); const t=data.telling[k];
-    if(t===""||t==null){el.textContent="nog niet geteld";el.style.color="#B7AF9E";return;}
-    const v=num(t)-b[k];
-    el.textContent=v===0?"klopt precies":(v<0?"tekort € ":"over € ")+euro(Math.abs(v));
-    el.style.color=v===0?"var(--groen)":v<0?"var(--rood)":"var(--oranje)";
-  });
-  const dR=data.telling.rekening===""?0:num(data.telling.rekening)-b.rekening;
-  const dC=data.telling.contant===""?0:num(data.telling.contant)-b.contant;
-  let kn="";
-  if(dR||dC)kn+='<button class="knop blauw" id="verwerkVerschil">✓ Verschil verwerken</button>';
-  if(num(c.rekening)||num(c.contant))kn+='<button class="knop" id="wisCorrectie" style="color:var(--licht)">Correctie wissen</button>';
-  $("corrKnoppen").innerHTML=kn;
-  if($("verwerkVerschil"))$("verwerkVerschil").onclick=()=>{
-    data.correctie={rekening:num(c.rekening)+dR,contant:num(c.contant)+dC};bewaarMaand();ververs();};
-  if($("wisCorrectie"))$("wisCorrectie").onclick=()=>{
-    data.correctie={rekening:0,contant:0};bewaarMaand();ververs();};
-
-  // afsluiten
-  const oR=b.rekening-spaar.rekening, oC=b.contant-spaar.contant, ietsOver=oR>0||oC>0;
-  if(data.afgesloten){
-    $("afsluitBlok").innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-      +'<span style="font-size:13px;color:var(--groen)">✓ € '+euro(data.overgemaakt.rekening)+' rekening + € '
-      +euro(data.overgemaakt.contant)+' contant naar de spaarpotten</span>'
-      +'<button class="knop" id="ongedaan" style="color:var(--licht)">Ongedaan maken</button></div>';
-    $("ongedaan").onclick=()=>{
-      spaar={rekening:spaar.rekening-num(data.overgemaakt.rekening),contant:spaar.contant-num(data.overgemaakt.contant)};
-      $("spaarRek").value=spaar.rekening;$("spaarCon").value=spaar.contant;bewaarSpaar();
-      data.afgesloten=false;data.overgemaakt={rekening:0,contant:0};bewaarMaand();ververs();};
-  }else{
-    $("afsluitBlok").innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-      +'<span style="font-size:13px;color:var(--grijs)">'+(ietsOver
-        ?'Over deze maand: <strong class="mono">€ '+euro(oR)+'</strong> rekening, <strong class="mono">€ '+euro(oC)+'</strong> contant'
-        :'Deze maand blijft er niets over om te sparen.')+'</span>'
-      +'<button class="knop donker" id="afsluiten"'+(ietsOver?"":" disabled")+'>Maand afsluiten</button></div>';
-    if(ietsOver)$("afsluiten").onclick=()=>{
-      spaar={rekening:b.rekening,contant:b.contant};
-      $("spaarRek").value=spaar.rekening;$("spaarCon").value=spaar.contant;bewaarSpaar();
-      data.afgesloten=true;data.overgemaakt={rekening:oR,contant:oC};bewaarMaand();ververs();};
-  }
-
-  // wenskleuren
-  data.wishlist.forEach(w=>{
-    const el=document.querySelector('[data-wens="'+w.id+'"]'); if(!el)return;
-    const s=status[w.id]||{};
-    el.className="wens"+(w.gekocht?" gekocht":(s.status?" "+s.status:""));
-    const st=el.querySelector(".status"), op=el.querySelector(".opnemen");
-    if(!w.gekocht&&s.status){st.style.display="";
-      st.textContent=({groen:"5× gespaard",oranje:"krap — wel te betalen",rood:"nog niet te betalen"})[s.status]
-        +" · € "+euro(s.rest)+" "+s.bron+" beschikbaar op dit punt";
-    }else st.style.display="none";
-    if(!w.gekocht&&s.nodig>0){op.style.display="";op.textContent="⚠ neem € "+euro(s.nodig)+" op van je rekening en dit kan wél";}
-    else op.style.display="none";
-  });
-  // vaste lasten dimmen
-  vaste.forEach(v=>{const el=document.querySelector('[data-vast="'+v.id+'"]');
-    if(el)el.classList.toggle("dim",!actiefNu(v));});
-}
-
-// ---------- bouwstenen ----------
-function inputEl(cls,type,ph,waarde,cb){
-  const i=document.createElement("input");
-  i.type=type; i.placeholder=ph||""; i.value=waarde==null?"":waarde;
-  if(type==="number")i.inputMode="decimal";
-  if(cls)i.className=cls;
-  i.addEventListener("input",()=>cb(i.value));
-  return i;
-}
-function bedragEl(waarde,cb){
-  const d=document.createElement("div"); d.className="bedrag mono";
-  const s=document.createElement("span"); s.textContent="€"; d.appendChild(s);
-  d.appendChild(inputEl(null,"number","0,00",waarde,cb));
-  return d;
-}
-function bronEl(waarde,cb){
-  const d=document.createElement("div"); d.className="toggle";
-  [["rekening","rek"],["contant","con"]].forEach(([k,kort])=>{
-    const b=document.createElement("button");
-    b.textContent=k; b.className=(waarde===k?"aan ":"")+kort;
-    b.onclick=()=>{cb(k);
-      Array.from(d.children).forEach(c=>c.className=c.className.replace("aan ",""));
-      b.className="aan "+kort; ververs();};
-    d.appendChild(b);
-  });
-  return d;
-}
-function wisEl(cb){const b=document.createElement("button");b.className="wis";b.textContent="🗑";
-  b.setAttribute("aria-label","Verwijderen");b.onclick=cb;return b;}
-
-function tekenLijst(doelId,rows,opties){
-  const doel=$(doelId); doel.innerHTML="";
-  if(!rows.length){const d=document.createElement("div");d.className="leeg";
-    d.textContent=opties.leegTekst||"Nog niets ingevuld.";doel.appendChild(d);return;}
-  rows.forEach(r=>{
-    const rij=document.createElement("div"); rij.className="regel";
-    if(opties.prio){
-      rij.appendChild(inputEl("prio mono","number","–",r.prioriteit,v=>{r.prioriteit=v;opties.bewaar();}));
-    }
-    rij.appendChild(inputEl("omschrijving","text",opties.ph||"omschrijving",r.omschrijving,
-      v=>{r.omschrijving=v;opties.bewaar();}));
-    if(opties.bron)rij.appendChild(bronEl(r.bron,v=>{r.bron=v;opties.bewaar();}));
-    rij.appendChild(bedragEl(r.bedrag,v=>{r.bedrag=v;opties.bewaar();ververs();}));
-    rij.appendChild(wisEl(()=>opties.verwijder(r.id)));
-    doel.appendChild(rij);
-  });
-}
-
-function tekenVaste(){
-  const doel=$("lijstVaste"); doel.innerHTML="";
-  if(!vaste.length){doel.innerHTML='<div class="leeg">Nog geen vaste lasten.</div>';return;}
-  vaste.forEach(v=>{
-    const wrap=document.createElement("div"); wrap.className="regel"; wrap.style.display="block";
-    wrap.setAttribute("data-vast",v.id);
-    const boven=document.createElement("div");
-    boven.style.cssText="display:flex;align-items:center;gap:9px;flex-wrap:wrap";
-    boven.appendChild(inputEl("omschrijving","text","bijv. huur, telefoon",v.omschrijving,
-      x=>{v.omschrijving=x;bewaarVaste();}));
-    boven.appendChild(bronEl(v.bron,x=>{v.bron=x;bewaarVaste();}));
-    boven.appendChild(bedragEl(v.bedrag,x=>{v.bedrag=x;bewaarVaste();ververs();}));
-    boven.appendChild(wisEl(()=>{vaste=vaste.filter(y=>y.id!==v.id);bewaarVaste();tekenVaste();ververs();}));
-    wrap.appendChild(boven);
-    const dat=document.createElement("div"); dat.className="datums";
-    const l1=document.createElement("label"); l1.style.cssText="display:flex;align-items:center;gap:5px";
-    l1.appendChild(document.createTextNode("vanaf"));
-    l1.appendChild(inputEl(null,"month","",v.start,x=>{v.start=x;bewaarVaste();ververs();}));
-    const l2=document.createElement("label"); l2.style.cssText="display:flex;align-items:center;gap:5px";
-    l2.appendChild(document.createTextNode("t/m"));
-    l2.appendChild(inputEl(null,"month","",v.eind,x=>{v.eind=x;bewaarVaste();ververs();}));
-    dat.appendChild(l1); dat.appendChild(l2);
-    wrap.appendChild(dat);
-    doel.appendChild(wrap);
-  });
-}
-
-function tekenWensen(){
-  const doel=$("lijstWensen"); doel.innerHTML="";
-  const rows=data.wishlist.slice().sort((a,b)=>prioVan(a)-prioVan(b));
-  if(!rows.length){doel.innerHTML='<div class="leeg">Nog geen wensen toegevoegd.</div>';return;}
-  rows.forEach(w=>{
-    const el=document.createElement("div"); el.className="wens"; el.setAttribute("data-wens",w.id);
-    const boven=document.createElement("div");
-    boven.style.cssText="display:flex;align-items:center;gap:9px;flex-wrap:wrap";
-    boven.appendChild(inputEl("prio mono","number","–",w.prioriteit,v=>{w.prioriteit=v;bewaarMaand();ververs();}));
-    const vink=document.createElement("button");
-    vink.className="vink"+(w.gekocht?" aan":""); vink.textContent=w.gekocht?"✓":"";
-    vink.setAttribute("aria-label","Gekocht markeren");
-    vink.onclick=()=>{w.gekocht=!w.gekocht;bewaarMaand();tekenWensen();ververs();};
-    boven.appendChild(vink);
-    boven.appendChild(inputEl("omschrijving","text","wat wil je?",w.omschrijving,v=>{w.omschrijving=v;bewaarMaand();}));
-    boven.appendChild(bronEl(w.bron,v=>{w.bron=v;bewaarMaand();}));
-    boven.appendChild(bedragEl(w.bedrag,v=>{w.bedrag=v;bewaarMaand();ververs();}));
-    boven.appendChild(wisEl(()=>{data.wishlist=data.wishlist.filter(x=>x.id!==w.id);globaleWensenlijst=globaleWensenlijst.filter(x=>x.id!==w.id);bewaarMaand();bewaarGlobaleWensen();tekenWensen();ververs();}));
-    el.appendChild(boven);
-
-    const lk=document.createElement("div"); lk.className="link";
-    lk.appendChild(document.createTextNode("🔗"));
-    lk.appendChild(inputEl(null,"url","link naar website (optioneel)",w.link,v=>{
-      w.link=v;bewaarMaand();
-      const a=lk.querySelector("a"); if(a){a.href=v;a.style.display=v?"":"none";}}));
-    const a=document.createElement("a"); a.target="_blank"; a.rel="noopener noreferrer";
-    a.textContent="open"; a.href=w.link||"#"; a.style.display=w.link?"":"none";
-    lk.appendChild(a); el.appendChild(lk);
-
-    const st=document.createElement("div"); st.className="status"; el.appendChild(st);
-    const op=document.createElement("div"); op.className="opnemen"; el.appendChild(op);
-    doel.appendChild(el);
-  });
-}
-
-function tekenAlles(){
-  tekenLijst("lijstInkomsten",data.income,{bron:true,bewaar:bewaarMaand,
-    verwijder:id=>{data.income=data.income.filter(r=>r.id!==id);globaleInkomsten=globaleInkomsten.filter(r=>r.id!==id);bewaarMaand();bewaarGlobaleInkomsten();tekenAlles();ververs();}});
-  tekenVaste();
-  tekenLijst("lijstOpnames",data.opnames,{ph:"bijv. pinnen zaterdag",leegTekst:"Nog niets opgenomen.",bewaar:bewaarMaand,
-    verwijder:id=>{data.opnames=data.opnames.filter(r=>r.id!==id);bewaarMaand();tekenAlles();ververs();}});
-  tekenLijst("lijstUitgaven",data.expenses.slice().sort((a,b)=>prioVan(a)-prioVan(b)),{prio:true,bron:true,bewaar:bewaarMaand,
-    verwijder:id=>{data.expenses=data.expenses.filter(r=>r.id!==id);bewaarMaand();tekenAlles();ververs();}});
-  tekenWensen();
-  ververs();
-}
-
-// ---------- events ----------
-document.querySelectorAll("[data-add]").forEach(b=>{
-  b.onclick=()=>{
-    const soort=b.getAttribute("data-add");
-    if(soort==="vaste"){
-      vaste.push({id:uid(),omschrijving:"",bedrag:"",bron:"rekening",start:"",eind:""});
-      bewaarVaste();tekenVaste();ververs();return;
-    }
-    const basis={id:uid(),omschrijving:"",bedrag:"",bron:"rekening"};
-    if(soort==="expenses"||soort==="wishlist")basis.prioriteit=String(data[soort].length+1);
-    if(soort==="wishlist"){basis.link="";basis.gekocht=false;}
-  
-  if(soort==="income"){globaleInkomsten.push(basis);bewaarGlobaleInkomsten();}
-  else if(soort==="wishlist"){globaleWensenlijst.push(basis);bewaarGlobaleWensen();}
-    
-    tekenAlles();
-  };
-});
-$("vorige").onclick=()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()-1,1);laadMaand();};
-$("volgende").onclick=()=>{cursor=new Date(cursor.getFullYear(),cursor.getMonth()+1,1);laadMaand();};
-$("spaarRek").addEventListener("input",e=>{spaar.rekening=num(e.target.value);bewaarSpaar();ververs();});
-$("spaarCon").addEventListener("input",e=>{spaar.contant=num(e.target.value);bewaarSpaar();ververs();});
-$("telRek").addEventListener("input",e=>{data.telling.rekening=e.target.value;bewaarMaand();ververs();});
-$("telCon").addEventListener("input",e=>{data.telling.contant=e.target.value;bewaarMaand();ververs();});
-
-$("exporteren").onclick=()=>{
-  const alles={};
-  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
-    if(k.indexOf("kasboek:")===0)alles[k]=localStorage.getItem(k);}
-  const blob=new Blob([JSON.stringify(alles,null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download="kasboek-backup-"+mk(new Date())+".json"; a.click();
-};
-$("importeren").onclick=()=>$("bestand").click();
-$("bestand").onchange=e=>{
-  const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{try{
-    const alles=JSON.parse(r.result);
-    Object.keys(alles).forEach(k=>{if(k.indexOf("kasboek:")===0)localStorage.setItem(k,alles[k]);});
-    start(); alert("Back-up teruggezet.");
-  }catch(err){alert("Dit bestand kon niet gelezen worden.");}};
-  r.readAsText(f);
-};
-
-function start(){
-  const s=lees(SPAAR_KEY,{rekening:0,contant:0});
-  spaar={rekening:num(s.rekening),contant:num(s.contant)};
-  $("spaarRek").value=spaar.rekening; $("spaarCon").value=spaar.contant;
-  vaste=lees(VAST_KEY,[]); if(!Array.isArray(vaste))vaste=[];
-  globaleInkomsten=lees(INK_KEY,[]); if(!Array.isArray(globaleInkomsten))globaleInkomsten=[];
-  globaleWensenlijst=lees(WENS_KEY,[]); if(!Array.isArray(globaleWensenlijst))globaleWensenlijst=[];
-  laadMaand();
-}
-start();
-
-// splashscreen wegfaden — pas nadat het handschrift-lettertype geladen is,
-// zodat de titel niet even in een terugval-lettertype flitst
-(function(){
-  const s=$("splash"); if(!s)return;
-  const weg=()=>{s.classList.add("weg");setTimeout(()=>s.remove(),650);};
-  let klaar=false;
-  const toon=()=>document.documentElement.classList.add("fonts-klaar");
-  const go=()=>{if(klaar)return;klaar=true;toon();setTimeout(weg,650);};
-  const cap=setTimeout(go,2600); // veiligheidslimiet als fonts niet laden
-  const ready=()=>{clearTimeout(cap);go();};
-  if(document.fonts&&document.fonts.load){
-    Promise.all([
-      document.fonts.load("700 52px 'Caveat'"),
-      document.fonts.load("400 16px 'Patrick Hand'")
-    ]).then(()=>document.fonts.ready).then(ready).catch(ready);
-  }else{
-    window.addEventListener("load",()=>setTimeout(ready,600));
-    setTimeout(ready,1200);
-  }
-})();
-</script>
+<script src="security.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>
