@@ -104,3 +104,8 @@ beschikbaar via het web-appmanifest en de Apple-touch-icon.
 Logincontroles draaien met mobiele Chromium en WebKit: schermbreedte, icoon,
 onjuiste gebruikersnaam/wachtwoord, overgang vanaf bestaande versleutelde gegevens,
 herladen en het intrekken van onthouden toegang. Alleen synthetische gegevens.
+
+De link ‘Wachtwoord vergeten?’ op het inlogscherm opent hulp over de
+wachtwoordmanager en versleutelde back-ups. Bij lokale versleuteling bestaat
+geen e-mailreset: zonder het bijbehorende wachtwoord zijn gegevens niet te
+herstellen. De link verandert of verwijdert geen gegevens.

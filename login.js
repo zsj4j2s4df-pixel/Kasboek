@@ -25,6 +25,9 @@ const LocalLogin=(()=>{
  function prepare({login=false,create=false,setup=false,remember=false}){
   const dialog=document.getElementById('wachtwoordDialoog'),name=document.getElementById('gebruikersnaam');
   dialog.classList.toggle('login-screen',login);
+  const forgot=document.getElementById('wachtwoordVergeten'),recovery=document.getElementById('wachtwoordHerstel');
+  forgot.hidden=!login;forgot.setAttribute('aria-expanded','false');recovery.hidden=true;
+  forgot.onclick=()=>{const expanded=forgot.getAttribute('aria-expanded')!=='true';forgot.setAttribute('aria-expanded',String(expanded));recovery.hidden=!expanded;if(expanded)recovery.scrollIntoView({block:'nearest'});};
   document.getElementById('gebruikersnaamBlok').hidden=!login;name.required=login;name.value='';
   document.getElementById('gebruikersnaamLabel').textContent=setup?'Kies je gebruikersnaam':'Gebruikersnaam';
   document.getElementById('loginHint').hidden=!login;

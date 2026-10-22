@@ -161,6 +161,8 @@ dialog button{padding:10px 16px;margin:6px 6px 0 0;border:1px solid #B7AF9E;bord
 #wachtwoordFormulier #rememberDialogLabel{display:flex;gap:10px;align-items:flex-start;margin:2px 0 14px;font-weight:400;}#wachtwoordFormulier #rememberDialog{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#7b654c;}#rememberDialogLabel small{display:block;font:12px/1.4 system-ui,sans-serif;color:#746656;margin-top:4px;}
 #wachtwoordFormulier [hidden]{display:none!important;}#wachtwoordFout{font:14px/1.4 system-ui,sans-serif;margin:8px 0;min-height:20px;}
 #wachtwoordFormulier #wachtwoordDoorgaan{width:100%;min-height:50px;margin:0;background:#7b654c;border:0;border-radius:12px;color:#fffaf0;font:600 16px system-ui,sans-serif;cursor:pointer;}#wachtwoordDoorgaan:disabled{opacity:.65;}#wachtwoordAnnuleren{width:100%;}
+#wachtwoordFormulier .login-forgot{display:block;margin:12px auto 0;padding:10px 12px;min-height:44px;border:0;background:transparent;color:#65533d;text-decoration:underline;text-underline-offset:3px;font:14px system-ui,sans-serif;cursor:pointer;}
+.login-recovery{margin-top:12px;padding:16px;border:1px solid #b7aa96;border-radius:12px;background:#fffaf0;}.login-recovery h3{font:600 17px/1.4 system-ui,sans-serif;margin:0 0 10px;}.login-recovery p{font:14px/1.5 system-ui,sans-serif;text-align:left;margin:10px 0;}.login-recovery p:last-child{margin-bottom:0;}
 </style></head>
 <body>
 <dialog id="wachtwoordDialoog" aria-labelledby="wachtwoordTitel">
@@ -173,6 +175,14 @@ dialog button{padding:10px 16px;margin:6px 6px 0 0;border:1px solid #B7AF9E;bord
 <label id="rememberDialogLabel" hidden><input id="rememberDialog" type="checkbox"><span>Ingelogd blijven<small>30 dagen op dit apparaat. Gebruik dit alleen op je eigen apparaat.</small></span></label>
 <p id="wachtwoordFout" role="alert" aria-live="polite"></p>
 <button id="wachtwoordDoorgaan" type="submit">Inloggen</button><button id="wachtwoordAnnuleren" type="button" hidden>Annuleren</button>
+<button id="wachtwoordVergeten" class="login-forgot" type="button" aria-expanded="false" aria-controls="wachtwoordHerstel" hidden>Wachtwoord vergeten?</button>
+<section id="wachtwoordHerstel" class="login-recovery" aria-labelledby="wachtwoordHerstelTitel" hidden>
+<h3 id="wachtwoordHerstelTitel">Hulp bij je wachtwoord</h3>
+<p>Je gegevens zijn op dit apparaat versleuteld met je wachtwoord. Er is geen e-mailaccount waarmee je het wachtwoord kunt resetten.</p>
+<p>Controleer de app Wachtwoorden of je wachtwoordmanager en zoek op de naam of het webadres van deze app.</p>
+<p>Heb je een versleutelde back-up? Ook daarvoor heb je het wachtwoord nodig waarmee die back-up is gemaakt.</p>
+<p><strong>Zonder het juiste wachtwoord zijn de versleutelde gegevens niet te herstellen.</strong> Wis je browsergegevens niet: daarmee kun je je opgeslagen gegevens verliezen.</p>
+</section>
 <p id="loginHint" hidden></p>
 </form></dialog>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
