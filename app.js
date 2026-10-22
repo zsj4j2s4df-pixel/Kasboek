@@ -33,12 +33,12 @@ function laadMaand(){
   data=g?Object.assign(leegMaand(),g):leegMaand();
   data.telling=data.telling||{rekening:"",contant:""};
   data.correctie=data.correctie||{rekening:0,contant:0};
-  
+
   data.income=globaleInkomsten;
   data.wishlist=globaleWensenlijst;
   data.opnames=(data.opnames||[]).map(r=>Object.assign({bron:"rekening"},r));
   data.expenses=(data.expenses||[]).map(r=>Object.assign({bron:"rekening"},r));
-  
+
   $("telRek").value=data.telling.rekening; $("telCon").value=data.telling.contant;
   $("maandLabel").textContent=MAANDEN[cursor.getMonth()]+" "+cursor.getFullYear();
   tekenAlles();
@@ -298,12 +298,12 @@ document.querySelectorAll("[data-add]").forEach(b=>{
     const basis={id:uid(),omschrijving:"",bedrag:"",bron:"rekening"};
     if(soort==="expenses"||soort==="wishlist")basis.prioriteit=String(data[soort].length+1);
     if(soort==="wishlist"){basis.link="";basis.gekocht=false;}
-  
+
   data[soort].push(basis);
   if(soort==="income")bewaarGlobaleInkomsten();
   else if(soort==="wishlist")bewaarGlobaleWensen();
   else bewaarMaand();
-    
+
     tekenAlles();
   };
 });

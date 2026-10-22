@@ -74,3 +74,15 @@ Cloudflare-deploy uit vanuit GitHub Actions en heeft daar geen API-token nodig.
 Branchbeveiliging hoort pull requests, geslaagde `Security checks`, geen force
 pushes en geen verwijdering van `main` af te dwingen. Het wijzigen daarvan
 vereist afzonderlijke GitHub-beheerrechten.
+
+Met een GitHub-koppeling met voldoende beheerrechten kan de branchbeveiliging
+worden ingesteld met:
+
+```sh
+gh api --method PUT repos/zsj4j2s4df-pixel/Kasboek/branches/main/protection \
+  --input scripts/branch-protection.json
+```
+
+Dit vereist een pull request en geslaagde automatische controles, ook voor
+beheerders. Het vereist geen tweede menselijke goedkeurder: dit is een
+persoonlijke repository. Force pushes en verwijderen van `main` zijn verboden.
