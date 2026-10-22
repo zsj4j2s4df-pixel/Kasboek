@@ -339,8 +339,8 @@ function laadMaand(){
   data.telling=data.telling||{rekening:"",contant:""};
   data.correctie=data.correctie||{rekening:0,contant:0};
   
-  data.income=globaleInkomsten.map(r=>Object.assign({bron:"rekening"},r));
-  data.wishlist=globaleWensenlijst.map(r=>Object.assign({bron:"rekening"},r));
+  data.income=globaleInkomsten;
+  data.wishlist=globaleWensenlijst;
   data.opnames=(data.opnames||[]).map(r=>Object.assign({bron:"rekening"},r));
   data.expenses=(data.expenses||[]).map(r=>Object.assign({bron:"rekening"},r));
   
@@ -549,22 +549,22 @@ function tekenWensen(){
     const el=document.createElement("div"); el.className="wens"; el.setAttribute("data-wens",w.id);
     const boven=document.createElement("div");
     boven.style.cssText="display:flex;align-items:center;gap:9px;flex-wrap:wrap";
-    boven.appendChild(inputEl("prio mono","number","–",w.prioriteit,v=>{w.prioriteit=v;bewaarMaand();ververs();}));
+    boven.appendChild(inputEl("prio mono","number","–",w.prioriteit,v=>{w.prioriteit=v;bewaarGlobaleWensen();ververs();}));
     const vink=document.createElement("button");
     vink.className="vink"+(w.gekocht?" aan":""); vink.textContent=w.gekocht?"✓":"";
     vink.setAttribute("aria-label","Gekocht markeren");
-    vink.onclick=()=>{w.gekocht=!w.gekocht;bewaarMaand();tekenWensen();ververs();};
+    vink.onclick=()=>{w.gekocht=!w.gekocht;bewaarGlobaleWensen();tekenWensen();ververs();};
     boven.appendChild(vink);
-    boven.appendChild(inputEl("omschrijving","text","wat wil je?",w.omschrijving,v=>{w.omschrijving=v;bewaarMaand();}));
-    boven.appendChild(bronEl(w.bron,v=>{w.bron=v;bewaarMaand();}));
-    boven.appendChild(bedragEl(w.bedrag,v=>{w.bedrag=v;bewaarMaand();ververs();}));
+    boven.appendChild(inputEl("omschrijving","text","wat wil je?",w.omschrijving,v=>{w.omschrijving=v;bewaarGlobaleWensen();}));
+    boven.appendChild(bronEl(w.bron,v=>{w.bron=v;bewaarGlobaleWensen();}));
+    boven.appendChild(bedragEl(w.bedrag,v=>{w.bedrag=v;bewaarGlobaleWensen();ververs();}));
     boven.appendChild(wisEl(()=>{data.wishlist=data.wishlist.filter(x=>x.id!==w.id);globaleWensenlijst=globaleWensenlijst.filter(x=>x.id!==w.id);bewaarMaand();bewaarGlobaleWensen();tekenWensen();ververs();}));
     el.appendChild(boven);
 
     const lk=document.createElement("div"); lk.className="link";
     lk.appendChild(document.createTextNode("🔗"));
     lk.appendChild(inputEl(null,"url","link naar website (optioneel)",w.link,v=>{
-      w.link=v;bewaarMaand();
+      w.link=v;bewaarGlobaleWensen();
       const a=lk.querySelector("a"); if(a){a.href=v;a.style.display=v?"":"none";}}));
     const a=document.createElement("a"); a.target="_blank"; a.rel="noopener noreferrer";
     a.textContent="open"; a.href=w.link||"#"; a.style.display=w.link?"":"none";
@@ -577,7 +577,7 @@ function tekenWensen(){
 }
 
 function tekenAlles(){
-  tekenLijst("lijstInkomsten",data.income,{bron:true,bewaar:bewaarMaand,
+  tekenLijst("lijstInkomsten",data.income,{bron:true,bewaar:bewaarGlobaleInkomsten,
     verwijder:id=>{data.income=data.income.filter(r=>r.id!==id);globaleInkomsten=globaleInkomsten.filter(r=>r.id!==id);bewaarMaand();bewaarGlobaleInkomsten();tekenAlles();ververs();}});
   tekenVaste();
   tekenLijst("lijstOpnames",data.opnames,{ph:"bijv. pinnen zaterdag",leegTekst:"Nog niets opgenomen.",bewaar:bewaarMaand,
@@ -600,8 +600,10 @@ document.querySelectorAll("[data-add]").forEach(b=>{
     if(soort==="expenses"||soort==="wishlist")basis.prioriteit=String(data[soort].length+1);
     if(soort==="wishlist"){basis.link="";basis.gekocht=false;}
   
-  if(soort==="income"){globaleInkomsten.push(basis);bewaarGlobaleInkomsten();}
-  else if(soort==="wishlist"){globaleWensenlijst.push(basis);bewaarGlobaleWensen();}
+  data[soort].push(basis);
+  if(soort==="income")bewaarGlobaleInkomsten();
+  else if(soort==="wishlist")bewaarGlobaleWensen();
+  else bewaarMaand();
     
     tekenAlles();
   };
@@ -640,6 +642,8 @@ function start(){
   vaste=lees(VAST_KEY,[]); if(!Array.isArray(vaste))vaste=[];
   globaleInkomsten=lees(INK_KEY,[]); if(!Array.isArray(globaleInkomsten))globaleInkomsten=[];
   globaleWensenlijst=lees(WENS_KEY,[]); if(!Array.isArray(globaleWensenlijst))globaleWensenlijst=[];
+  globaleInkomsten=globaleInkomsten.map(r=>Object.assign({bron:"rekening"},r));
+  globaleWensenlijst=globaleWensenlijst.map(r=>Object.assign({bron:"rekening"},r));
   laadMaand();
 }
 start();
