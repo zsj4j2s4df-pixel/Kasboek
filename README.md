@@ -86,3 +86,21 @@ gh api --method PUT repos/zsj4j2s4df-pixel/Kasboek/branches/main/protection \
 Dit vereist een pull request en geslaagde automatische controles, ook voor
 beheerders. Het vereist geen tweede menselijke goedkeurder: dit is een
 persoonlijke repository. Force pushes en verwijderen van `main` zijn verboden.
+
+## Lokaal inloggen
+
+Het inlogscherm toont het app-icoon, gebruikersnaam en wachtwoord. Voor bestaande
+gegevens kies je bij de eerste keer een gebruikersnaam met je bestaande wachtwoord.
+Gebruikersnamen zijn niet hoofdlettergevoelig en worden versleuteld in IndexedDB
+opgeslagen met de bestaande gegevenssleutel. Het wachtwoord wordt niet opgeslagen.
+Een back-up gebruikt nog steeds alleen het oorspronkelijke back-upwachtwoord.
+
+‘Ingelogd blijven’ is optioneel en onthoudt dit apparaat 30 dagen via een niet
+exporteerbare CryptoKey in IndexedDB. Andere gebruikers van die browser kunnen dan
+ook bij de gegevens. Vergrendelen trekt deze toegang in. Er is geen serveraccount
+of automatische synchronisatie tussen apparaten. Het eigen icoon blijft ook
+beschikbaar via het web-appmanifest en de Apple-touch-icon.
+
+Logincontroles draaien met mobiele Chromium en WebKit: schermbreedte, icoon,
+onjuiste gebruikersnaam/wachtwoord, overgang vanaf bestaande versleutelde gegevens,
+herladen en het intrekken van onthouden toegang. Alleen synthetische gegevens.

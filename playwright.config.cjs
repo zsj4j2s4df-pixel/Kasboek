@@ -1,2 +1,2 @@
-const {defineConfig}=require('@playwright/test');
-module.exports=defineConfig({testDir:'./tests',testMatch:'*.spec.cjs',workers:1,timeout:45000,use:{baseURL:'http://localhost:4173',headless:true},webServer:{command:'node scripts/test-server.mjs',url:'http://localhost:4173',reuseExistingServer:false}});
+const {defineConfig,devices}=require('@playwright/test');
+module.exports=defineConfig({testDir:'./tests',testMatch:'*.spec.cjs',workers:1,timeout:45000,projects:[{name:'chromium',use:{browserName:'chromium',viewport:{width:390,height:844},hasTouch:true,isMobile:true}},{name:'mobile-webkit',use:{...devices['iPhone 13'],browserName:'webkit'}}],use:{baseURL:'http://localhost:4174',headless:true},webServer:{command:'node scripts/test-server.mjs',url:'http://localhost:4174',reuseExistingServer:false}});

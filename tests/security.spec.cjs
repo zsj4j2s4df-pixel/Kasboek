@@ -3,7 +3,7 @@ const PASS='Test-wachtwoord-voor-kasboek-2026';
 async function open(page,{existing=false}={}){
   await page.goto('/');
   await expect(page.locator('#wachtwoordDialoog')).toBeVisible();
-  await page.locator('#wachtwoord').fill(PASS);
+  await page.locator('#wachtwoordDialoog').waitFor({state:'visible'});if(await page.locator('#gebruikersnaamBlok').isVisible())await page.locator('#gebruikersnaam').fill('testgebruiker');await page.locator('#wachtwoord').fill(PASS);
   if(!existing)await page.locator('#wachtwoordHerhaal').fill(PASS);
   await page.locator('#wachtwoordDoorgaan').click();
   await expect(page.locator('#wachtwoordDialoog')).not.toBeVisible();
@@ -44,10 +44,10 @@ test('legacy migration preserves data, removes plaintext and rejects wrong passw
  await expect(page.locator('#lijstInkomsten .omschrijving')).toHaveValue('Synthetisch salaris');
  expect(await page.evaluate(()=>Object.keys(localStorage))).toEqual(['kasboek:vault:v1']);
  await page.locator('#vergrendelen').click();await expect(page.locator('#wachtwoordDialoog')).toBeVisible();
- await page.locator('#wachtwoord').fill('Verkeerd-wachtwoord');await page.locator('#wachtwoordDoorgaan').click();
- await expect(page.locator('#wachtwoordFout')).toContainText('Verkeerd wachtwoord');
+ await page.locator('#wachtwoordDialoog').waitFor({state:'visible'});if(await page.locator('#gebruikersnaamBlok').isVisible())await page.locator('#gebruikersnaam').fill('testgebruiker');await page.locator('#wachtwoord').fill('Verkeerd-wachtwoord');await page.locator('#wachtwoordDoorgaan').click();
+ await expect(page.locator('#wachtwoordFout')).toContainText('Gebruikersnaam of wachtwoord klopt niet');
  await expect(page.locator('#lijstInkomsten .omschrijving')).toHaveCount(0);
- await page.locator('#wachtwoord').fill(PASS);await page.locator('#wachtwoordDoorgaan').click();
+ await page.locator('#wachtwoordDialoog').waitFor({state:'visible'});if(await page.locator('#gebruikersnaamBlok').isVisible())await page.locator('#gebruikersnaam').fill('testgebruiker');await page.locator('#wachtwoord').fill(PASS);await page.locator('#wachtwoordDoorgaan').click();
  await expect(page.locator('#lijstInkomsten .omschrijving')).toHaveValue('Synthetisch salaris');
 });
 test('invalid import is atomic, bounded and cannot poison next startup',async({page})=>{
@@ -71,11 +71,11 @@ test('encrypted backup round trip on another origin; tampering and wrong passwor
  const fs=require('node:fs');const text=fs.readFileSync(await download.path(),'utf8'),envelope=JSON.parse(text);
  expect(envelope.format).toBe('kasboek-vault');expect(text).not.toContain('Synthetisch salaris');expect(text).not.toContain(PASS);
  const context=await browser.newContext(),other=await context.newPage();other.on('dialog',d=>d.dismiss());
- await other.goto('http://127.0.0.1:4173/');await other.locator('#wachtwoord').fill('Nieuw-apparaat-wachtwoord');await other.locator('#wachtwoordHerhaal').fill('Nieuw-apparaat-wachtwoord');await other.locator('#wachtwoordDoorgaan').click();await expect(other.locator('#wachtwoordDialoog')).not.toBeVisible();
+ await other.goto('http://127.0.0.1:4174/');await other.locator('#wachtwoordDialoog').waitFor({state:'visible'});if(await other.locator('#gebruikersnaamBlok').isVisible())await other.locator('#gebruikersnaam').fill('testgebruiker');await other.locator('#wachtwoord').fill('Nieuw-apparaat-wachtwoord');await other.locator('#wachtwoordHerhaal').fill('Nieuw-apparaat-wachtwoord');await other.locator('#wachtwoordDoorgaan').click();await expect(other.locator('#wachtwoordDialoog')).not.toBeVisible();
  const before=await other.evaluate(()=>localStorage.getItem('kasboek:vault:v1'));
  const tampered={...envelope,ciphertext:(envelope.ciphertext[0]==='A'?'B':'A')+envelope.ciphertext.slice(1)};
- await upload(other,tampered);await other.locator('#wachtwoord').fill(PASS);await other.locator('#wachtwoordDoorgaan').click();await expect(other.locator('#wachtwoordFout')).toContainText('Verkeerd wachtwoord');expect(await other.evaluate(()=>localStorage.getItem('kasboek:vault:v1'))).toBe(before);await other.locator('#wachtwoordAnnuleren').click();
- await upload(other,envelope);await other.locator('#wachtwoord').fill(PASS);await other.locator('#wachtwoordDoorgaan').click();await expect(other.locator('#lijstInkomsten .omschrijving')).toHaveValue('Synthetisch salaris');
+ await upload(other,tampered);await other.locator('#wachtwoordDialoog').waitFor({state:'visible'});if(await other.locator('#gebruikersnaamBlok').isVisible())await other.locator('#gebruikersnaam').fill('testgebruiker');await other.locator('#wachtwoord').fill(PASS);await other.locator('#wachtwoordDoorgaan').click();await expect(other.locator('#wachtwoordFout')).toContainText('Verkeerd wachtwoord');expect(await other.evaluate(()=>localStorage.getItem('kasboek:vault:v1'))).toBe(before);await other.locator('#wachtwoordAnnuleren').click();
+ await upload(other,envelope);await other.locator('#wachtwoordDialoog').waitFor({state:'visible'});if(await other.locator('#gebruikersnaamBlok').isVisible())await other.locator('#gebruikersnaam').fill('testgebruiker');await other.locator('#wachtwoord').fill(PASS);await other.locator('#wachtwoordDoorgaan').click();await expect(other.locator('#lijstInkomsten .omschrijving')).toHaveValue('Synthetisch salaris');
  await context.close();
 });
 test('unsafe URLs and HTML stay inert; only HTTPS links open',async({page})=>{

@@ -326,7 +326,7 @@ $("bestand").onchange=async e=>{
   finally{e.target.value="";$("importeren").disabled=false;document.querySelector(".wrap").inert=false;}
 };
 $("vergrendelen").onclick=async()=>{
-  try{await KasboekSecurity.flush();location.reload();}catch(err){alert(err.message);}
+  try{await KasboekSecurity.flush();await KasboekSecurity.setRemembered(false);location.reload();}catch(err){alert(err.message);}
 };
 
 function start(){
