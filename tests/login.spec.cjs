@@ -1,0 +1,23 @@
+const{test,expect}=require('@playwright/test');
+const app=require('../package.json').name;
+const PASS='Lokaal-inloggen-testwachtwoord-2026';
+const lock=app==='panklaar'?'#pk-lock':'#vergrendelen';
+async function ready(page){await expect(page.locator('#wachtwoordDialoog')).not.toBeVisible();if(app==='kasboek')await page.locator('#splash').waitFor({state:'detached'});else await expect(page.locator('#screen')).toContainText('Panklaar');}
+async function credentials(page,name='mijngebruiker',password=PASS){await page.locator('#gebruikersnaam').fill(name);await page.locator('#wachtwoord').fill(password);}
+async function create(page,remember=false){await page.goto('/');await credentials(page);await page.locator('#wachtwoordHerhaal').fill(PASS);if(remember)await page.locator('#rememberDialog').check();await page.locator('#wachtwoordDoorgaan').click();await ready(page);}
+test('branded login is mobile-sized, accessible, and shows the actual app icon',async({page})=>{
+ await page.goto('/');await expect(page.locator('#wachtwoordDialoog')).toHaveClass('login-screen');await expect(page.locator('#loginBrand')).toContainText(app==='panklaar'?'Panklaar':'Kasboek');const img=page.locator('#loginBrand img');await expect(img).toBeVisible();await expect.poll(()=>img.evaluate(x=>x.complete&&x.naturalWidth>0)).toBeTruthy();
+ await expect(page.locator('#gebruikersnaam')).toHaveAttribute('autocomplete','username');await expect(page.locator('#rememberDialog')).not.toBeChecked();await page.locator('#wachtwoord').fill('voorbeeld');await page.locator('#toonWachtwoord').tap();await expect(page.locator('#wachtwoord')).toHaveAttribute('type','text');await page.locator('#toonWachtwoord').tap();await expect(page.locator('#wachtwoord')).toHaveAttribute('type','password');
+ const sizes=await page.locator('#wachtwoordDialoog').evaluate(e=>({width:e.getBoundingClientRect().width,viewport:innerWidth,scroll:e.scrollWidth}));expect(sizes.width).toBe(sizes.viewport);expect(sizes.scroll).toBeLessThanOrEqual(sizes.viewport);await page.locator('#wachtwoord').fill('');await page.screenshot({path:test.info().outputPath('login.png')});
+});
+test('username and password are required and wrong credentials do not unlock data',async({page})=>{
+ await create(page);await page.locator(lock).click();await expect(page.locator('#wachtwoordDialoog')).toBeVisible();await credentials(page,'anderegebruiker');await page.locator('#wachtwoordDoorgaan').click();await expect(page.locator('#wachtwoordFout')).toHaveText('Gebruikersnaam of wachtwoord klopt niet.');await expect(page.locator('#wachtwoordDialoog')).toBeVisible();await credentials(page,'mijngebruiker','verkeerd-wachtwoord');await page.locator('#wachtwoordDoorgaan').click();await expect(page.locator('#wachtwoordFout')).toHaveText('Gebruikersnaam of wachtwoord klopt niet.');await credentials(page,'MijnGebruiker');await page.locator('#wachtwoordDoorgaan').click();await ready(page);
+ const identity=await page.evaluate(app=>new Promise(resolve=>{const r=indexedDB.open(app+'-login',1);r.onsuccess=()=>{const db=r.result,tx=db.transaction('records'),q=tx.objectStore('records').get('identity');q.onsuccess=()=>resolve({encrypted:q.result.ciphertext instanceof ArrayBuffer,plain:JSON.stringify(q.result).includes('mijngebruiker')});tx.oncomplete=()=>db.close();};}),app);expect(identity).toEqual({encrypted:true,plain:false});
+});
+test('staying logged in survives reload; explicit lock removes remembered access',async({page})=>{
+ await create(page,true);await page.reload();await ready(page);await page.locator(lock).click();await expect(page.locator('#wachtwoordDialoog')).toBeVisible();await credentials(page);await page.locator('#wachtwoordDoorgaan').click();await ready(page);await page.reload();await expect(page.locator('#wachtwoordDialoog')).toBeVisible();
+});
+test('existing encrypted vault can add a username using its unchanged password',async({page})=>{
+ await create(page);await page.evaluate(app=>new Promise((resolve,reject)=>{const r=indexedDB.open(app+'-login',1);r.onsuccess=()=>{const db=r.result,tx=db.transaction('records','readwrite');tx.objectStore('records').delete('identity');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);};}),app);
+ await page.reload();await expect(page.locator('#gebruikersnaamLabel')).toHaveText('Kies je gebruikersnaam');await expect(page.locator('#wachtwoordHerhaalBlok')).toBeHidden();await credentials(page,'nieuwenaam');await page.locator('#wachtwoordDoorgaan').click();await ready(page);await page.locator(lock).click();await credentials(page,'nieuwenaam');await page.locator('#wachtwoordDoorgaan').click();await ready(page);
+});

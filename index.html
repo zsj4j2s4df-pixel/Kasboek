@@ -148,15 +148,32 @@ dialog h2{font:600 23px system-ui,sans-serif;margin:0 0 12px}dialog p{font:14px/
 dialog input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #B7AF9E;border-radius:8px;margin:6px 0 14px;font:16px system-ui,sans-serif;background:white}
 dialog button{padding:10px 16px;margin:6px 6px 0 0;border:1px solid #B7AF9E;border-radius:8px;cursor:pointer;background:#E8E0D0;font:14px system-ui,sans-serif}
 #wachtwoordFout{color:#A8462E;min-height:20px}#migratieBericht{margin:12px 0;padding:16px;background:#EFE4CD;border-radius:12px;font:14px/1.5 system-ui,sans-serif}
+
+/* Branded local sign-in; full viewport, with a compact form on phones. */
+#wachtwoordDialoog.login-screen{box-sizing:border-box;position:fixed;inset:0;margin:0;width:100%;max-width:none;height:100vh;height:100dvh;max-height:none;border:0;border-radius:0;padding:24px;padding:max(24px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left));background:radial-gradient(ellipse at top,#fffaf0,#efe9dd 75%);overflow-y:auto;overscroll-behavior:contain;}
+#wachtwoordDialoog.login-screen[open]{display:flex;align-items:safe center;justify-content:center;}
+.login-screen #wachtwoordFormulier{width:100%;max-width:380px;margin:auto;}
+#loginBrand{text-align:center;margin-bottom:20px;}#loginBrand img{display:block;width:72px;height:72px;border-radius:18px;margin:0 auto 12px;box-shadow:0 6px 22px #332d2814;}#loginBrand .login-app{font:600 30px/1.2 system-ui,sans-serif;letter-spacing:-1px;}
+#wachtwoordDialoog h2{font-size:23px;text-align:center;}#wachtwoordUitleg{text-align:center;color:#746656;margin-bottom:24px;}#loginHint{font:13px/1.5 system-ui,sans-serif;color:#746656;text-align:center;margin-top:22px;}
+#wachtwoordFormulier label{font:500 14px/1.4 system-ui,sans-serif;}#wachtwoordFormulier input:not([type=checkbox]){display:block;min-height:50px;border-radius:12px;margin:7px 0 18px;background:#fffdf8;border:1px solid #b7aa96;color:#332d28;}
+#wachtwoordFormulier input:focus-visible,#wachtwoordFormulier button:focus-visible{outline:3px solid #8b7250;outline-offset:3px;}
+.login-password{position:relative;}#wachtwoordFormulier .login-password input{padding-right:82px;}#wachtwoordFormulier #toonWachtwoord{position:absolute;right:8px;top:8px;border:0;margin:0;background:transparent;padding:9px;font:500 13px system-ui,sans-serif;color:#65533d;}
+#wachtwoordFormulier #rememberDialogLabel{display:flex;gap:10px;align-items:flex-start;margin:2px 0 14px;font-weight:400;}#wachtwoordFormulier #rememberDialog{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#7b654c;}#rememberDialogLabel small{display:block;font:12px/1.4 system-ui,sans-serif;color:#746656;margin-top:4px;}
+#wachtwoordFormulier [hidden]{display:none!important;}#wachtwoordFout{font:14px/1.4 system-ui,sans-serif;margin:8px 0;min-height:20px;}
+#wachtwoordFormulier #wachtwoordDoorgaan{width:100%;min-height:50px;margin:0;background:#7b654c;border:0;border-radius:12px;color:#fffaf0;font:600 16px system-ui,sans-serif;cursor:pointer;}#wachtwoordDoorgaan:disabled{opacity:.65;}#wachtwoordAnnuleren{width:100%;}
 </style></head>
 <body>
 <dialog id="wachtwoordDialoog" aria-labelledby="wachtwoordTitel">
 <form id="wachtwoordFormulier">
-<h2 id="wachtwoordTitel">Kasboek ontgrendelen</h2><p id="wachtwoordUitleg"></p>
-<label for="wachtwoord">Wachtwoord</label><input id="wachtwoord" type="password" autocomplete="current-password" required maxlength="256">
-<div id="wachtwoordHerhaalBlok" hidden><label for="wachtwoordHerhaal">Herhaal wachtwoord</label><input id="wachtwoordHerhaal" type="password" autocomplete="new-password" maxlength="256"></div>
-<p id="wachtwoordFout" role="alert"></p>
-<button id="wachtwoordDoorgaan" type="submit">Ontgrendelen</button><button id="wachtwoordAnnuleren" type="button" hidden>Annuleren</button>
+<div id="loginBrand" data-app="kasboek"><img src="icon-192.png" alt="" width="84" height="84"><div class="login-app">Kasboek</div></div>
+<h2 id="wachtwoordTitel">Inloggen</h2><p id="wachtwoordUitleg"></p>
+<div id="gebruikersnaamBlok" hidden><label id="gebruikersnaamLabel" for="gebruikersnaam">Gebruikersnaam</label><input id="gebruikersnaam" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="80"></div>
+<label for="wachtwoord">Wachtwoord</label><div class="login-password"><input id="wachtwoord" name="password" type="password" autocomplete="current-password" required maxlength="256"><button id="toonWachtwoord" type="button" aria-controls="wachtwoord" aria-pressed="false">Toon</button></div>
+<div id="wachtwoordHerhaalBlok" hidden><label for="wachtwoordHerhaal">Herhaal wachtwoord</label><input id="wachtwoordHerhaal" name="password-confirm" type="password" autocomplete="new-password" maxlength="256"></div>
+<label id="rememberDialogLabel" hidden><input id="rememberDialog" type="checkbox"><span>Ingelogd blijven<small>30 dagen op dit apparaat. Gebruik dit alleen op je eigen apparaat.</small></span></label>
+<p id="wachtwoordFout" role="alert" aria-live="polite"></p>
+<button id="wachtwoordDoorgaan" type="submit">Inloggen</button><button id="wachtwoordAnnuleren" type="button" hidden>Annuleren</button>
+<p id="loginHint" hidden></p>
 </form></dialog>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <filter id="wobble" x="-6%" y="-6%" width="112%" height="112%">
@@ -316,6 +333,7 @@ dialog button{padding:10px 16px;margin:6px 6px 0 0;border:1px solid #B7AF9E;bord
   </div>
 </div>
 
+<script src="login.js" defer></script>
 <script src="security.js" defer></script>
 <script src="app.js" defer></script>
 </body>

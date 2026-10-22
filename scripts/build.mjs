@@ -1,5 +1,5 @@
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
-const names=['index.html','security.js','app.js','manifest.json','logo.svg','favicon.svg','favicon-32.png','apple-touch-icon.png','icon-192.png','icon-512.png'];
+const names=['index.html','login.js','security.js','app.js','manifest.json','logo.svg','favicon.svg','favicon-32.png','apple-touch-icon.png','icon-192.png','icon-512.png'];
 const types={html:'text/html; charset=utf-8',js:'text/javascript; charset=utf-8',json:'application/manifest+json',svg:'image/svg+xml',png:'image/png'};
 const assets=Object.create(null);
 for(const name of names)assets['/'+name]={type:types[name.split('.').at(-1)],base64:(await readFile(new URL('../'+name,import.meta.url))).toString('base64')};

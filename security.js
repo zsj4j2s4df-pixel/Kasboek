@@ -5,7 +5,7 @@ const KasboekSecurity = (() => {
   const MAX_BYTES = 2 * 1024 * 1024;
   const encoder = new TextEncoder(), decoder = new TextDecoder('utf-8', {fatal:true});
   let key, salt, snapshot = Object.create(null), queue = Promise.resolve();
-  let pending = 0, failed = false, currentEnvelope = null, sessionActive = false;
+  let pending = 0, failed = false, currentEnvelope = null, sessionActive = false, rememberUntil = 0;
   const invalid = () => { throw new Error('De back-up bevat ongeldige of te veel gegevens. Er is niets gewijzigd.'); };
   const object = x => x !== null && typeof x === 'object' && !Array.isArray(x) && [Object.prototype,null].includes(Object.getPrototypeOf(x));
   const fields = (x, allowed) => { if (!object(x) || Object.keys(x).some(k => !allowed.includes(k))) invalid(); };
@@ -87,11 +87,19 @@ const KasboekSecurity = (() => {
     const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:aad,tagLength:128},key,bytes);
     return {format:'kasboek-vault',version:1,kdf:'PBKDF2-SHA256',iterations:ITERATIONS,salt:b64(salt),iv:b64(iv),ciphertext:b64(new Uint8Array(ciphertext))};
   }
-  async function decrypt(envelope,password) {
-    const {s,iv,ciphertext}=envelopeParts(envelope);
-    const candidate=await derive(password,s);
+  async function decryptWithKey(envelope,candidate){
+    const {iv,ciphertext}=envelopeParts(envelope);
     const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv,additionalData:aad,tagLength:128},candidate,ciphertext);
-    return {data:validateBackup(JSON.parse(decoder.decode(bytes))),key:candidate,salt:s};
+    return validateBackup(JSON.parse(decoder.decode(bytes)));
+  }
+  async function decrypt(envelope,password) {
+    const {s}=envelopeParts(envelope),candidate=await derive(password,s);
+    return {data:await decryptWithKey(envelope,candidate),key:candidate,salt:s};
+  }
+  const isRemembered=()=>rememberUntil>Date.now();
+  async function setRemembered(remember){
+    if(!remember){await LocalLogin.forget();rememberUntil=0;return;}
+    await LocalLogin.remember(key,b64(salt));rememberUntil=Date.now()+30*86400000;
   }
   function status(text, error=false) {
     const el=document.getElementById('opslagStatus');if(el){el.textContent=text;el.style.color=error?'#A8462E':'#61745E';}
@@ -111,14 +119,15 @@ const KasboekSecurity = (() => {
     queue=queue.catch(()=>{}).then(()=>commit(data)).then(()=>{failed=false;},()=>{failed=true;status('Opslaan mislukt — maak een back-up',true);}).finally(()=>{pending--;if(!pending&&!failed)status('versleuteld opgeslagen');});
   }
   async function flush() {await queue;if(failed)throw new Error('Opslaan is mislukt. Maak een back-up voordat je afsluit.');}
-  function passwordDialog({title,description,create=false,cancel=false,action}) {
+  function passwordDialog({title,description,create=false,cancel=false,login=false,setup=false,remember=false,action}) {
+    LocalLogin.prepare({login,create,setup,remember});
     const dialog=document.getElementById('wachtwoordDialoog'),form=document.getElementById('wachtwoordFormulier');
     const password=document.getElementById('wachtwoord'),repeat=document.getElementById('wachtwoordHerhaal');
     const error=document.getElementById('wachtwoordFout'),submit=document.getElementById('wachtwoordDoorgaan'),abort=document.getElementById('wachtwoordAnnuleren');
     document.getElementById('wachtwoordTitel').textContent=title;document.getElementById('wachtwoordUitleg').textContent=description;
     document.getElementById('wachtwoordHerhaalBlok').hidden=!create;repeat.required=create;
     password.autocomplete=create?'new-password':'current-password';password.value='';repeat.value='';error.textContent='';
-    submit.textContent=create?'Versleuteling instellen':'Ontgrendelen';abort.hidden=!cancel;
+    submit.textContent=create?'Inloggen instellen':login?'Inloggen':'Ontgrendelen';abort.hidden=!cancel;
     return new Promise(resolve=>{
       let busy=false;
       dialog.oncancel=e=>{e.preventDefault();if(cancel&&!busy){dialog.close();resolve(null);}};
@@ -127,11 +136,11 @@ const KasboekSecurity = (() => {
         e.preventDefault();if(busy)return;
         if(create&&(password.value.length<12||password.value!==repeat.value)){error.textContent='Kies minstens 12 tekens en vul tweemaal hetzelfde wachtwoord in.';return;}
         busy=true;submit.disabled=true;abort.disabled=true;error.textContent='Even geduld…';
-        try{const value=await action(password.value);password.value='';repeat.value='';dialog.close();resolve(value);}
-        catch(err){error.textContent=err.name==='OperationError'?'Verkeerd wachtwoord of beschadigde back-up.':err.message;}
+        try{const value=await action(password.value,remember&&document.getElementById('rememberDialog').checked);password.value='';repeat.value='';dialog.close();resolve(value);}
+        catch(err){error.textContent=err.name==='OperationError'?(login?'Gebruikersnaam of wachtwoord klopt niet.':'Verkeerd wachtwoord of beschadigde back-up.'):err.message;}
         finally{busy=false;submit.disabled=false;abort.disabled=false;}
       };
-      dialog.showModal();password.focus();
+      dialog.showModal();(login?document.getElementById('gebruikersnaam'):password).focus();
     });
   }
   async function open() {
@@ -140,15 +149,17 @@ const KasboekSecurity = (() => {
     if(currentEnvelope){
       if(currentEnvelope.length>MAX_BYTES*2)invalid();
       const envelope=JSON.parse(currentEnvelope);envelopeParts(envelope);
-      await passwordDialog({title:'Kasboek ontgrendelen',description:'Je gegevens blijven versleuteld op dit apparaat. Vul je wachtwoord in.',action:async password=>{
-        const unlocked=await decrypt(envelope,password);key=unlocked.key;salt=unlocked.salt;snapshot=unlocked.data;return true;
+      let remembered=await LocalLogin.recalled(envelope.salt),automaticallyOpened=false;
+      if(remembered){try{snapshot=await decryptWithKey(envelope,remembered.key);key=remembered.key;salt=envelopeParts(envelope).s;rememberUntil=remembered.expiresAt;automaticallyOpened=true;}catch{await setRemembered(false);}}
+      if(!automaticallyOpened)await passwordDialog({title:'Welkom terug',login:true,setup:!await LocalLogin.hasIdentity(envelope.salt),remember:true,description:'Je gegevens blijven versleuteld op dit apparaat. Vul je wachtwoord in.',action:async(password,remember)=>{
+        const unlocked=await decrypt(envelope,password);await LocalLogin.verify(unlocked.key,envelope.salt,LocalLogin.username());key=unlocked.key;salt=unlocked.salt;snapshot=unlocked.data;await setRemembered(remember);return true;
       }});
     }else{
       const legacy=Object.create(null);
       for(let i=0;i<localStorage.length;i++){const name=localStorage.key(i);if(name.startsWith('kasboek:'))legacy[name]=localStorage.getItem(name);}
       const clean=validateBackup(legacy);
-      await passwordDialog({title:'Beveilig je kasboek',create:true,description:'Kies een uniek wachtwoord van minstens 12 tekens. Bewaar het in je wachtwoordmanager: zonder wachtwoord zijn je gegevens en back-ups niet te herstellen. Bestaande gegevens worden versleuteld.',action:async password=>{
-        salt=crypto.getRandomValues(new Uint8Array(16));key=await derive(password,salt);await commit(clean);snapshot=clean;return true;
+      await passwordDialog({title:'Inloggen instellen',login:true,setup:true,remember:true,create:true,description:'Kies een wachtwoord van minstens 12 tekens. Bewaar het goed: zonder wachtwoord zijn je gegevens niet te herstellen.',action:async(password,remember)=>{
+        salt=crypto.getRandomValues(new Uint8Array(16));key=await derive(password,salt);await LocalLogin.verify(key,b64(salt),LocalLogin.username());await commit(clean);snapshot=clean;await setRemembered(remember);return true;
       }});
       // Delete plaintext only after the encrypted copy has been successfully stored.
       for(const name of Object.keys(legacy))localStorage.removeItem(name);
@@ -156,7 +167,7 @@ const KasboekSecurity = (() => {
     // Complete a migration interrupted after the durable encrypted write.
     for(let i=localStorage.length-1;i>=0;i--){const name=localStorage.key(i);if(name!==VAULT_KEY&&name.startsWith('kasboek:'))localStorage.removeItem(name);}
     sessionActive=true;status('versleuteld opgeslagen');
-    let idle;const reset=()=>{clearTimeout(idle);idle=setTimeout(()=>{flush().then(()=>location.reload()).catch(()=>status('Vergrendelen uitgesteld: maak eerst een back-up',true));},10*60*1000);};
+    let idle;const reset=()=>{clearTimeout(idle);idle=setTimeout(()=>{if(isRemembered()){reset();return;}flush().then(()=>location.reload()).catch(()=>status('Vergrendelen uitgesteld: maak eerst een back-up',true));},10*60*1000);};
     for(const event of ['pointerdown','keydown','input'])document.addEventListener(event,reset,{passive:true});reset();
   }
   async function restore(file) {
@@ -191,5 +202,5 @@ const KasboekSecurity = (() => {
       }).catch(reject);
     });
   }
-  return {open:exclusiveOpen,get:(name,fallback)=>snapshot[name]===undefined?fallback:JSON.parse(snapshot[name]),set,flush,restore,download,safeUrl,validateBackup};
+  return {open:exclusiveOpen,get:(name,fallback)=>snapshot[name]===undefined?fallback:JSON.parse(snapshot[name]),set,flush,restore,download,safeUrl,validateBackup,setRemembered,isRemembered};
 })();
